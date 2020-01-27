@@ -2,7 +2,7 @@ extern crate sfml;
 
 use sfml::graphics::*;
 use sfml::window::{Event, Key, Style, mouse};
-use sfml::system::{Vector2f, Vector3f};
+use sfml::system::{Vector2f, Vector3f, Vector2i};
 use sfml::audio::{Music, SoundStatus};
 use sfml::system::{sleep, Time};
 use std::io::Write;
@@ -11,7 +11,8 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
           player: &mut Text, history: &mut Text, about_text: &mut Text, close_text: &mut Text,
           text_lofi: &mut Text, text_radio: &mut Text, play_rect: &mut ConvexShape,
           play_text: &mut Text, play_triangle: &mut ConvexShape, nwplaying: &mut Text,
-          presstxt: &mut Text, delta: f32, v: &mut Vector3f, emp: f32, smooth: bool) {
+          presstxt: &mut Text, abouttxt: &mut Text, delta: f32, v: &mut Vector3f, emp: f32,
+          smooth: bool) {
     let xd = v.z - v.y;
     let iters = 30;
 
@@ -38,8 +39,13 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
 
                 display_rect.set_point(0, Vector2f::new(v.z, cur_h));
                 display_rect.set_point(1, Vector2f::new(v.z, cur_l));
-                display_rect.set_point(2, Vector2f::new(v.x + offset + emp, cur_l));
-                display_rect.set_point(3, Vector2f::new(v.x + offset + emp, cur_h));
+                if q == iters / 2 {
+                    display_rect.set_point(2, Vector2f::new(v.x + offset, cur_l));
+                    display_rect.set_point(3, Vector2f::new(v.x + offset, cur_h));
+                } else {
+                    display_rect.set_point(2, Vector2f::new(v.x + offset + emp, cur_l));
+                    display_rect.set_point(3, Vector2f::new(v.x + offset + emp, cur_h));
+                }
             }
         }
 
@@ -53,31 +59,36 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
 
         let pos = text_lofi.position();
         text_lofi.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(text_lofi);
 
         let pos = text_radio.position();
         text_radio.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(text_radio);
 
         let pos = play_rect.position();
         play_rect.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(play_rect);
 
         let pos = play_text.position();
         play_text.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(play_text);
 
         let pos = play_triangle.position();
         play_triangle.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(play_triangle);
 
         let pos = nwplaying.position();
         nwplaying.set_position(Vector2f::new(pos.x + delta, pos.y));
-        window.draw(nwplaying);
 
         let pos = presstxt.position();
         presstxt.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = abouttxt.position();
+        abouttxt.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        window.draw(text_lofi);
+        window.draw(text_radio);
+        window.draw(play_rect);
+        window.draw(play_text);
+        window.draw(play_triangle);
+        window.draw(nwplaying);
         window.draw(presstxt);
+        window.draw(abouttxt);
 
         window.display()
     }
@@ -170,6 +181,10 @@ fn main() {
     display_rect.set_fill_color(Color::rgba(255, 255, 255, 110));
 
     let mut about_page = Text::new("", &_fabryka, 30);
+    about_page.set_outline_thickness(2.5);
+    about_page.set_outline_color(Color::rgba(45, 45, 45, 200));
+    about_page.set_string("Репозиторий проекта: github.com/afentev/LoFi\n\nt.me/afentev");
+    about_page.set_position(Vector2f::new(1100.0, 160.0));
 
     let mut whirligig = "p";
 
@@ -179,11 +194,17 @@ fn main() {
         Style::NONE,
         &Default::default(),
     );
-    window.set_vertical_sync_enabled(true);
+    window.set_framerate_limit(100);
+//    window.set_vertical_sync_enabled(true);
+    window.set_key_repeat_enabled(false);
 
     let mut counter = 1;
     let mut sleeper = 0;
     let mut wait = 0;
+
+    let mut window_moving = false;
+    let mut window_prev = Vector2i::new(window.position().x, window.position().y);
+    let mut click_prev = Vector2i::new(0, 0);
 
     loop {
         window.clear(Color::WHITE);
@@ -220,6 +241,8 @@ fn main() {
             player.set_outline_thickness(0.0);
             player.set_outline_color(Color::rgba(200, 200, 200, 200));
 
+            about_page.set_position(Vector2f::new(50.0, 160.0));
+
             display_rect.set_point(0, Vector2f::new(565.0, 30.0));
             display_rect.set_point(1, Vector2f::new(565.0, 100.0));
             display_rect.set_point(2, Vector2f::new(760.0, 100.0));
@@ -227,6 +250,8 @@ fn main() {
         }
 
         let cords = window.mouse_position();
+        let ps = mouse::desktop_position();
+
         if 310 <= cords.x && cords.x <= 490 && 600 <= cords.y && cords.y <= 640 {
             play_rect.set_fill_color(Color::rgba(130, 130, 130, 180));
         } else {
@@ -270,8 +295,6 @@ fn main() {
 
                         }
 
-                        //505, 300, 15
-
                         let mut v = Vector3f::new(300.0, 505.0, 760.0);
                         if is_clicked_on_right(x, y) {
                             let prev = whirligig;
@@ -283,15 +306,15 @@ fn main() {
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, -35.0, &mut v, 27.0,
-                                       true);
+                                       &mut presstxt, &mut about_page, -35.0,
+                                       &mut v, 27.0, true);
                             } else if prev == "h" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, -70.0, &mut v, 0.0,
-                                       false);
+                                       &mut presstxt, &mut about_page, -70.0, &mut v,
+                                       0.0, false);
                             }
                         }
                         if is_clicked_on_left(x, y) {
@@ -304,15 +327,15 @@ fn main() {
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, 35.0, &mut v, 11.0,
-                                       true);
+                                       &mut presstxt, &mut about_page, 35.0, &mut v,
+                                       11.0, true);
                             } else if prev == "a" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, 70.0, &mut v, 0.0,
-                                false);
+                                       &mut presstxt, &mut about_page, 70.0, &mut v,
+                                       0.0, false);
                             }
                         }
                         if is_clicked_on_center(x, y) {
@@ -325,8 +348,8 @@ fn main() {
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, -35.0, &mut v, 47.0,
-                                       true);
+                                       &mut presstxt, &mut about_page, -35.0, &mut v,
+                                       47.0, true);
                             } else if prev == "a" {
                                 let mut v = Vector3f::new(760.0, 505.0, 300.0);
 
@@ -334,12 +357,36 @@ fn main() {
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, 35.0, &mut v, -63.66,
-                                true);
+                                       &mut presstxt, &mut about_page, 35.0, &mut v,
+                                       -63.66, true);
+                            }
+                        }
+                        if cords.y < 30{
+                            if !window_moving {
+                                window_moving = true;
+                                window_prev.x = window.position().x;
+                                window_prev.y = window.position().y;
+                                click_prev.x = window.position().x + cords.x;
+                                click_prev.y = window.position().y + cords.y;
                             }
                         }
                     }
 
+                }
+                Event::MouseButtonReleased {
+                    ..
+                } => {
+                    if window_moving {
+                        window_moving = false;
+                    }
+                }
+                Event::MouseMoved {
+                    ..
+                } => {
+                    if window_moving {
+                        let delta = Vector2i::new(ps.x - click_prev.x, ps.y - click_prev.y);
+                        window.set_position(Vector2i::new(window_prev.x + delta.x, window_prev.y + delta.y));
+                    }
                 },
                 _ => {}
             }
@@ -356,6 +403,8 @@ fn main() {
             window.draw(&play_triangle);
             window.draw(&nwplaying);
             window.draw(&presstxt);
+        } else if whirligig == "a" {
+            window.draw(&about_page);
         }
 
         if 0 <= cords.x && cords.x <= 800 && 0 <= cords.y && cords.y <= 800 && window.has_focus() {

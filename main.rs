@@ -12,7 +12,11 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
           text_lofi: &mut Text, text_radio: &mut Text, play_rect: &mut ConvexShape,
           play_text: &mut Text, play_triangle: &mut ConvexShape, nwplaying: &mut Text,
           presstxt: &mut Text, abouttxt: &mut Text, delta: f32, v: &mut Vector3f, emp: f32,
-          smooth: bool) {
+          smooth: bool, rect1: &mut ConvexShape, rect2: &mut ConvexShape, rect3: &mut ConvexShape,
+          rect4: &mut ConvexShape, rect5: &mut ConvexShape, track1: &mut Text,
+          date1: &mut Text, track2: &mut Text, date2: &mut Text, track3: &mut Text,
+          date3: &mut Text, track4: &mut Text, date4: &mut Text, track5: &mut Text,
+          date5: &mut Text) {
     let xd = v.z - v.y;
     let iters = 30;
 
@@ -81,6 +85,51 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         let pos = abouttxt.position();
         abouttxt.set_position(Vector2f::new(pos.x + delta, pos.y));
 
+        let pos = track1.position();
+        track1.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = date1.position();
+        date1.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = track2.position();
+        track2.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = date2.position();
+        date2.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = track3.position();
+        track3.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = date3.position();
+        date3.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = track4.position();
+        track4.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = date4.position();
+        date4.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = track5.position();
+        track5.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = date5.position();
+        date5.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = rect1.position();
+        rect1.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = rect2.position();
+        rect2.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = rect3.position();
+        rect3.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = rect4.position();
+        rect4.set_position(Vector2f::new(pos.x + delta, pos.y));
+
+        let pos = rect5.position();
+        rect5.set_position(Vector2f::new(pos.x + delta, pos.y));
+
         window.draw(text_lofi);
         window.draw(text_radio);
         window.draw(play_rect);
@@ -89,9 +138,108 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         window.draw(nwplaying);
         window.draw(presstxt);
         window.draw(abouttxt);
+        window.draw(track1);
+        window.draw(date1);
+        window.draw(track2);
+        window.draw(date2);
+        window.draw(track3);
+        window.draw(date3);
+        window.draw(track4);
+        window.draw(date4);
+        window.draw(track5);
+        window.draw(date5);
+        window.draw(rect1);
+        window.draw(rect2);
+        window.draw(rect3);
+        window.draw(rect4);
+        window.draw(rect5);
 
         window.display()
     }
+}
+
+fn gen_hist_rects(rect1: &mut ConvexShape, rect2: &mut ConvexShape, rect3: &mut ConvexShape,
+                  rect4: &mut ConvexShape, rect5: &mut ConvexShape, track1: &mut Text,
+                  date1: &mut Text, track2: &mut Text, date2: &mut Text, track3: &mut Text,
+                  date3: &mut Text, track4: &mut Text, date4: &mut Text, track5: &mut Text,
+                  date5: &mut Text) {
+
+    rect1.set_point(0, Vector2f::new(-970.0, 170.0));
+    rect1.set_point(1, Vector2f::new(-970.0, 260.0));
+    rect1.set_point(2, Vector2f::new(-330.0, 260.0));
+    rect1.set_point(3, Vector2f::new(-330.0, 170.0));
+
+    rect2.set_point(0, Vector2f::new(-970.0, 290.0));
+    rect2.set_point(1, Vector2f::new(-970.0, 380.0));
+    rect2.set_point(2, Vector2f::new(-330.0, 380.0));
+    rect2.set_point(3, Vector2f::new(-330.0, 290.0));
+
+    rect3.set_point(0, Vector2f::new(-970.0, 410.0));
+    rect3.set_point(1, Vector2f::new(-970.0, 500.0));
+    rect3.set_point(2, Vector2f::new(-330.0, 500.0));
+    rect3.set_point(3, Vector2f::new(-330.0, 410.0));
+
+    rect4.set_point(0, Vector2f::new(-970.0, 530.0));
+    rect4.set_point(1, Vector2f::new(-970.0, 620.0));
+    rect4.set_point(2, Vector2f::new(-330.0, 620.0));
+    rect4.set_point(3, Vector2f::new(-330.0, 530.0));
+
+    rect5.set_point(0, Vector2f::new(-970.0, 650.0));
+    rect5.set_point(1, Vector2f::new(-970.0, 740.0));
+    rect5.set_point(2, Vector2f::new(-330.0, 740.0));
+    rect5.set_point(3, Vector2f::new(-330.0, 650.0));
+
+    rect1.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect1.set_outline_thickness(6.0);
+    rect1.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect2.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect2.set_outline_thickness(6.0);
+    rect2.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect3.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect3.set_outline_thickness(6.0);
+    rect3.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect4.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect4.set_outline_thickness(6.0);
+    rect4.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect5.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect5.set_outline_thickness(6.0);
+    rect5.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    track1.set_string("The Beatles - Let it be");
+    date1.set_string("a long time ago");
+    date1.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track2.set_string("Del Shannon - Runaway");
+    date2.set_string("a long time ago");
+    date2.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track3.set_string("Del Shannon - Runaway");
+    date3.set_string("a long time ago");
+    date3.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track4.set_string("Del Shannon - Runaway");
+    date4.set_string("a long time ago");
+    date4.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track5.set_string("Del Shannon - Runaway");
+    date5.set_string("a long time ago");
+    date5.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track1.set_position(Vector2f::new(-960.0, 180.0));
+    date1.set_position(Vector2f::new(-958.0, 230.0));
+    track2.set_position(Vector2f::new(-960.0, 300.0));
+    date2.set_position(Vector2f::new(-958.0, 350.0));
+    track3.set_position(Vector2f::new(-960.0, 420.0));
+    date3.set_position(Vector2f::new(-958.0, 470.0));
+    track4.set_position(Vector2f::new(-960.0, 540.0));
+    date4.set_position(Vector2f::new(-958.0, 590.0));
+    track5.set_position(Vector2f::new(-960.0, 660.0));
+    date5.set_position(Vector2f::new(-958.0, 710.0));
+
 }
 
 fn is_clicked_on_left(x: i32, y: i32) -> bool {
@@ -206,6 +354,33 @@ fn main() {
     let mut window_prev = Vector2i::new(window.position().x, window.position().y);
     let mut click_prev = Vector2i::new(0, 0);
 
+    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
+                                          vec!{"Undefined", "Undefined", "a long time ago"},
+                                          vec!{"Undefined", "Undefined", "a long time ago"},
+                                          vec!{"Undefined", "Undefined", "a long time ago"},
+                                          vec!{"Undefined", "Undefined", "a long time ago"}};
+
+    let mut rect1 = ConvexShape::new(4);
+    let mut rect2 = ConvexShape::new(4);
+    let mut rect3 = ConvexShape::new(4);
+    let mut rect4 = ConvexShape::new(4);
+    let mut rect5 = ConvexShape::new(4);
+
+    let mut track1 = Text::new("", &jb, 23);
+    let mut date1 = Text::new("", &jb, 15);
+    let mut track2 = Text::new("", &jb, 23);
+    let mut date2 = Text::new("", &jb, 15);
+    let mut track3 = Text::new("", &jb, 23);
+    let mut date3 = Text::new("", &jb, 15);
+    let mut track4 = Text::new("", &jb, 23);
+    let mut date4 = Text::new("", &jb, 15);
+    let mut track5 = Text::new("", &jb, 23);
+    let mut date5 = Text::new("", &jb, 15);
+
+    gen_hist_rects(&mut rect1, &mut rect2, &mut rect3, &mut rect4, &mut rect5, &mut track1,
+                   &mut date1, &mut track2, &mut date2, &mut track3,  &mut date3, &mut track4,
+                   &mut date4, &mut track5, &mut date5);
+
     loop {
         window.clear(Color::WHITE);
 
@@ -282,6 +457,7 @@ fn main() {
 
                         if 310 <= x && x <= 490 && 600 <= y && y <= 640 {
                             let mut music = Music::from_file((dir.to_owned() + "/music.wav").as_str()).unwrap();
+                            music.set_looping(false);
                             music.play();
 
                             while music.status() == SoundStatus::Playing {
@@ -307,14 +483,20 @@ fn main() {
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, -35.0,
-                                       &mut v, 27.0, true);
+                                       &mut v, 27.0, true, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             } else if prev == "h" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, -70.0, &mut v,
-                                       0.0, false);
+                                       0.0, false, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             }
                         }
                         if is_clicked_on_left(x, y) {
@@ -328,14 +510,20 @@ fn main() {
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, 35.0, &mut v,
-                                       11.0, true);
+                                       11.0, true, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             } else if prev == "a" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, 70.0, &mut v,
-                                       0.0, false);
+                                       0.0, false, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             }
                         }
                         if is_clicked_on_center(x, y) {
@@ -349,7 +537,10 @@ fn main() {
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, -35.0, &mut v,
-                                       47.0, true);
+                                       47.0, true, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             } else if prev == "a" {
                                 let mut v = Vector3f::new(760.0, 505.0, 300.0);
 
@@ -358,7 +549,10 @@ fn main() {
                                        &mut text_lofi, &mut text_radio, &mut play_rect,
                                        &mut play_text, &mut play_triangle, &mut nwplaying,
                                        &mut presstxt, &mut about_page, 35.0, &mut v,
-                                       -63.66, true);
+                                       -63.66, true, &mut rect1, &mut rect2,
+                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                       &mut track2, &mut date2, &mut track3,  &mut date3,
+                                       &mut track4, &mut date4, &mut track5, &mut date5);
                             }
                         }
                         if cords.y < 30{
@@ -405,6 +599,22 @@ fn main() {
             window.draw(&presstxt);
         } else if whirligig == "a" {
             window.draw(&about_page);
+        } else if whirligig == "h" {
+            window.draw(&rect1);
+            window.draw(&rect2);
+            window.draw(&rect3);
+            window.draw(&rect4);
+            window.draw(&rect5);
+            window.draw(&track1);
+            window.draw(&date1);
+            window.draw(&track2);
+            window.draw(&date2);
+            window.draw(&track3);
+            window.draw(&date3);
+            window.draw(&track4);
+            window.draw(&date4);
+            window.draw(&track5);
+            window.draw(&date5);
         }
 
         if 0 <= cords.x && cords.x <= 800 && 0 <= cords.y && cords.y <= 800 && window.has_focus() {

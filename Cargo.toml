@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 sfml = "*"
-imgui = "*"
-glium = "*"
+vlc-rs = "*"

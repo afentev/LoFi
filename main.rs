@@ -1,11 +1,11 @@
 extern crate sfml;
+extern crate vlc;
 
 use sfml::graphics::*;
 use sfml::window::{Event, Key, Style, mouse};
 use sfml::system::{Vector2f, Vector3f, Vector2i};
-use sfml::audio::{Music, SoundStatus};
-use sfml::system::{sleep, Time};
-use std::io::Write;
+
+use vlc::{Instance, Media, MediaPlayer};
 
 fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut ConvexShape,
           player: &mut Text, history: &mut Text, about_text: &mut Text, close_text: &mut Text,
@@ -266,7 +266,12 @@ fn is_clicked_on_right(x: i32, y: i32) -> bool {
    560 <= x && x <= 770 && 40 <= y && y <= 92
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
+    let instance = Instance::new().unwrap();
+    let md = Media::new_location(&instance, "http://hyades.shoutca.st:8043/stream").unwrap();
+    let mdp = MediaPlayer::new(&instance).unwrap();
+    mdp.set_media(&md);
+
     let dir = "/home/afentev/CLionProjects/lofi_rust";
     let width = 800;
     let height = 800;
@@ -380,11 +385,11 @@ fn main() {
     let mut window_prev = Vector2i::new(window.position().x, window.position().y);
     let mut click_prev = Vector2i::new(0, 0);
 
-    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
-                                          vec!{"Undefined", "Undefined", "a long time ago"},
-                                          vec!{"Undefined", "Undefined", "a long time ago"},
-                                          vec!{"Undefined", "Undefined", "a long time ago"},
-                                          vec!{"Undefined", "Undefined", "a long time ago"}};
+//    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
+//                                          vec!{"Undefined", "Undefined", "a long time ago"},
+//                                          vec!{"Undefined", "Undefined", "a long time ago"},
+//                                          vec!{"Undefined", "Undefined", "a long time ago"},
+//                                          vec!{"Undefined", "Undefined", "a long time ago"}};
 
     let mut rect1 = ConvexShape::new(4);
     let mut rect2 = ConvexShape::new(4);
@@ -407,13 +412,17 @@ fn main() {
                    &mut date1, &mut track2, &mut date2, &mut track3,  &mut date3, &mut track4,
                    &mut date4, &mut track5, &mut date5);
 
-    let mut music = Music::from_file((dir.to_owned() + "/music.wav").as_str()).unwrap();
     let mut is_music_playing = false;
 
     loop {
-        is_music_playing = music.status() == SoundStatus::Playing;
-        if is_music_playing {
-            ;
+        if whirligig == "p" {
+            if is_music_playing {
+                play_text.set_string("PAUSE");
+            play_text.set_position(Vector2f::new(383.0, 601.0));
+            } else {
+                play_text.set_string("PLAY");
+                play_text.set_position(Vector2f::new(390.0, 601.0));
+            }
         }
 
         window.clear(Color::WHITE);
@@ -480,25 +489,26 @@ fn main() {
             match event {
                 Event::Closed | Event::KeyPressed {
                     code: Key::Escape, ..
-                } => return,
+                } => return Ok(()),
                 Event::MouseButtonPressed {
                     button, x, y
                 } => {
                     if button == mouse::Button::Left {
                         if 729 <= x && x <= 787 && 6 <= y && y <= 32 {
-                            return
+                            return Ok(());
                         }
 
                         if 310 <= x && x <= 490 && 600 <= y && y <= 640 {
                             if is_music_playing {
-                                music.stop();
+                                mdp.stop();
                                 play_text.set_string("PLAY");
-                                play_text.set_position(Vector2f::new(390.0, 601 as f32));
+                                play_text.set_position(Vector2f::new(390.0, 601.0));
+                                is_music_playing = false;
                             } else {
-                                music.set_looping(false);
-                                music.play();
+                                mdp.play().unwrap();
                                 play_text.set_string("PAUSE");
-                                play_text.set_position(Vector2f::new(383.0, 601 as f32));
+                                play_text.set_position(Vector2f::new(383.0, 601.0));
+                                is_music_playing = true;
                             }
                         }
 

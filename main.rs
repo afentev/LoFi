@@ -6,6 +6,8 @@ use sfml::window::{Event, Key, Style, mouse};
 use sfml::system::{Vector2f, Vector3f, Vector2i};
 
 use vlc::{Instance, Media, MediaPlayer};
+use std::thread::sleep;
+use std::time::Duration;
 
 fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut ConvexShape,
           player: &mut Text, history: &mut Text, about_text: &mut Text, close_text: &mut Text,
@@ -16,7 +18,8 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
           rect4: &mut ConvexShape, rect5: &mut ConvexShape, track1: &mut Text,
           date1: &mut Text, track2: &mut Text, date2: &mut Text, track3: &mut Text,
           date3: &mut Text, track4: &mut Text, date4: &mut Text, track5: &mut Text,
-          date5: &mut Text, pause1: &mut ConvexShape, pause2: &mut ConvexShape, music_on: bool) {
+          date5: &mut Text, pause1: &mut ConvexShape, pause2: &mut ConvexShape, music_on: bool,
+          real_playing: bool) {
     let xd = v.z - v.y;
     let iters = 30;
 
@@ -159,10 +162,10 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         window.draw(rect4);
         window.draw(rect5);
 
-        if music_on {
+        if music_on && real_playing {
             window.draw(pause1);
             window.draw(pause2);
-        } else {
+        } else if !music_on && !real_playing {
             window.draw(play_triangle);
         }
 
@@ -266,9 +269,12 @@ fn is_clicked_on_right(x: i32, y: i32) -> bool {
    560 <= x && x <= 770 && 40 <= y && y <= 92
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let instance = Instance::new().unwrap();
     let md = Media::new_location(&instance, "http://hyades.shoutca.st:8043/stream").unwrap();
+
+    //http://hyades.shoutca.st:8043/stream
+    //http://streamingv2.shoutcast.com/BeyondMetal
     let mdp = MediaPlayer::new(&instance).unwrap();
     mdp.set_media(&md);
 
@@ -373,7 +379,7 @@ fn main() -> std::io::Result<()> {
         Style::NONE,
         &Default::default(),
     );
-    window.set_framerate_limit(100);
+//    window.set_framerate_limit(10);
 //    window.set_vertical_sync_enabled(true);
     window.set_key_repeat_enabled(false);
 
@@ -413,15 +419,38 @@ fn main() -> std::io::Result<()> {
                    &mut date4, &mut track5, &mut date5);
 
     let mut is_music_playing = false;
+    let mut real_playing;
 
     loop {
+        if window.has_focus() {
+            window.set_framerate_limit(60);
+        } else {
+            window.set_framerate_limit(3);
+        }
+        real_playing = mdp.is_playing();
+
         if whirligig == "p" {
-            if is_music_playing {
-                play_text.set_string("PAUSE");
-            play_text.set_position(Vector2f::new(383.0, 601.0));
-            } else {
+            if !is_music_playing {
                 play_text.set_string("PLAY");
                 play_text.set_position(Vector2f::new(390.0, 601.0));
+                play_rect.set_point(0, Vector2f::new(310.0, 600.0));
+                play_rect.set_point(1, Vector2f::new(490.0, 600.0));
+                play_rect.set_point(2, Vector2f::new(490.0, 640.0));
+                play_rect.set_point(3, Vector2f::new(310.0, 640.0));
+            } else if mdp.is_playing(){
+                play_text.set_string("PAUSE");
+                play_text.set_position(Vector2f::new(383.0, 601.0));
+                play_rect.set_point(0, Vector2f::new(310.0, 600.0));
+                play_rect.set_point(1, Vector2f::new(490.0, 600.0));
+                play_rect.set_point(2, Vector2f::new(490.0, 640.0));
+                play_rect.set_point(3, Vector2f::new(310.0, 640.0));
+            } else {
+                play_text.set_string("Wait, connecting...");
+                play_text.set_position(Vector2f::new(232.0, 601.0));
+                play_rect.set_point(0, Vector2f::new(210.0, 600.0));
+                play_rect.set_point(1, Vector2f::new(590.0, 600.0));
+                play_rect.set_point(2, Vector2f::new(590.0, 640.0));
+                play_rect.set_point(3, Vector2f::new(210.0, 640.0));
             }
         }
 
@@ -470,10 +499,12 @@ fn main() -> std::io::Result<()> {
         let cords = window.mouse_position();
         let ps = mouse::desktop_position();
 
-        if 310 <= cords.x && cords.x <= 490 && 600 <= cords.y && cords.y <= 640 {
-            play_rect.set_fill_color(Color::rgba(130, 130, 130, 180));
-        } else {
-            play_rect.set_fill_color(Color::rgba(0, 0, 0, 180));
+        if is_music_playing && real_playing || !is_music_playing && !real_playing && window.has_focus() {
+            if 310 <= cords.x && cords.x <= 490 && 600 <= cords.y && cords.y <= 640 {
+                    play_rect.set_fill_color(Color::rgba(130, 130, 130, 180));
+                } else {
+                    play_rect.set_fill_color(Color::rgba(0, 0, 0, 180));
+                }
         }
 
         let mut name: String = "/Gif/ss/".to_owned();
@@ -489,27 +520,31 @@ fn main() -> std::io::Result<()> {
             match event {
                 Event::Closed | Event::KeyPressed {
                     code: Key::Escape, ..
-                } => return Ok(()),
+                } => return,
                 Event::MouseButtonPressed {
                     button, x, y
                 } => {
-                    if button == mouse::Button::Left {
+                    if button == mouse::Button::Left && window.has_focus() {
                         if 729 <= x && x <= 787 && 6 <= y && y <= 32 {
-                            return Ok(());
+                            return;
                         }
 
                         if 310 <= x && x <= 490 && 600 <= y && y <= 640 {
-                            if is_music_playing {
-                                mdp.stop();
-                                play_text.set_string("PLAY");
-                                play_text.set_position(Vector2f::new(390.0, 601.0));
-                                is_music_playing = false;
-                            } else {
-                                mdp.play().unwrap();
-                                play_text.set_string("PAUSE");
-                                play_text.set_position(Vector2f::new(383.0, 601.0));
-                                is_music_playing = true;
+                            if is_music_playing && real_playing || !is_music_playing && !real_playing {
+                                if is_music_playing {
+                                    mdp.stop();
+                                    play_text.set_string("PLAY");
+                                    play_text.set_position(Vector2f::new(390.0, 601.0));
+                                    is_music_playing = false;
+                                } else {
+                                    mdp.play().unwrap();
+                                    play_text.set_string("PAUSE");
+                                    play_text.set_position(Vector2f::new(383.0, 601.0));
+                                    is_music_playing = true;
+                                    play_rect.set_fill_color(Color::rgba(0, 0, 0, 180));
+                                }
                             }
+                            real_playing = mdp.is_playing();
                         }
 
                         let mut v = Vector3f::new(300.0, 505.0, 760.0);
@@ -528,7 +563,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             } else if prev == "h" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
@@ -539,7 +575,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             }
                         }
                         if is_clicked_on_left(x, y) {
@@ -557,7 +594,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             } else if prev == "a" {
                                 moving(&mut window, &mut sprite, &mut display_rect, &mut player,
                                        &mut history, &mut about_text, &mut close_text,
@@ -568,7 +606,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             }
                         }
                         if is_clicked_on_center(x, y) {
@@ -586,7 +625,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             } else if prev == "a" {
                                 let mut v = Vector3f::new(760.0, 505.0, 300.0);
 
@@ -599,7 +639,8 @@ fn main() -> std::io::Result<()> {
                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
                                        &mut track2, &mut date2, &mut track3,  &mut date3,
                                        &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing);
+                                       &mut pause1, &mut pause2, is_music_playing,
+                                       real_playing);
                             }
                         }
                         if cords.y < 30{
@@ -643,10 +684,10 @@ fn main() -> std::io::Result<()> {
             window.draw(&play_text);
             window.draw(&nwplaying);
             window.draw(&presstxt);
-            if is_music_playing {
+            if is_music_playing && real_playing{
                 window.draw(&pause1);
                 window.draw(&pause2);
-            } else {
+            } else if !is_music_playing && !real_playing {
                 window.draw(&play_triangle);
             }
         } else if whirligig == "a" {
@@ -669,39 +710,41 @@ fn main() -> std::io::Result<()> {
             window.draw(&date5);
         }
 
-        if 0 <= cords.x && cords.x <= 800 && 0 <= cords.y && cords.y <= 800 && window.has_focus() {
-            if (800 - cords.x) * (800 - cords.x) + cords.y * cords.y <= 125000 {
-                let mut delta = ((800 - cords.x) * (800 - cords.x) + (cords.y) * (cords.y)) as f64;
-                delta = (1.0 - delta / 125000.0) * 255.0;
-                close_text.set_fill_color(Color::rgba(255, 255, 255, delta as u8));
+        if window.has_focus() {
+            if 0 <= cords.x && cords.x <= 800 && 0 <= cords.y && cords.y <= 800 {
+                if (800 - cords.x) * (800 - cords.x) + cords.y * cords.y <= 125000 {
+                    let mut delta = ((800 - cords.x) * (800 - cords.x) + (cords.y) * (cords.y)) as f64;
+                    delta = (1.0 - delta / 125000.0) * 255.0;
+                    close_text.set_fill_color(Color::rgba(255, 255, 255, delta as u8));
+                } else {
+                    close_text.set_fill_color(Color::rgba(255, 255, 255, 0));
+                }
+                if 729 <= cords.x && cords.x <= 787 && 6 <= cords.y && cords.y <= 32 {
+                    close_text.set_outline_thickness(0.9);
+                } else {
+                    close_text.set_outline_thickness(0.0);
+                }
+
+                if 560 <= cords.x && cords.x <= 770 && 40 <= cords.y && cords.y <= 92 {
+                    if whirligig != "a" {
+                        about_text.set_outline_thickness(1.1);
+                    }
+                }
+
+                if 45 <= cords.x && cords.x <= 225 && 40 <= cords.y && cords.y <= 92 {
+                    if whirligig != "h" {
+                        history.set_outline_thickness(1.1);
+                    }
+                }
+                if 310 <= cords.x && cords.x <= 495 && 40 <= cords.y && cords.y <= 92 {
+                    if whirligig != "p" {
+                        player.set_outline_thickness(1.1);
+                    }
+                }
+
             } else {
                 close_text.set_fill_color(Color::rgba(255, 255, 255, 0));
             }
-            if 729 <= cords.x && cords.x <= 787 && 6 <= cords.y && cords.y <= 32 {
-                close_text.set_outline_thickness(0.9);
-            } else {
-                close_text.set_outline_thickness(0.0);
-            }
-
-            if 560 <= cords.x && cords.x <= 770 && 40 <= cords.y && cords.y <= 92 {
-                if whirligig != "a" {
-                    about_text.set_outline_thickness(1.1);
-                }
-            }
-
-            if 45 <= cords.x && cords.x <= 225 && 40 <= cords.y && cords.y <= 92 {
-                if whirligig != "h" {
-                    history.set_outline_thickness(1.1);
-                }
-            }
-            if 310 <= cords.x && cords.x <= 495 && 40 <= cords.y && cords.y <= 92 {
-                if whirligig != "p" {
-                    player.set_outline_thickness(1.1);
-                }
-            }
-
-        } else {
-            close_text.set_fill_color(Color::rgba(255, 255, 255, 0));
         }
 
         window.draw(&player);
@@ -723,6 +766,12 @@ fn main() -> std::io::Result<()> {
                 counter = 1 + (counter + 1) % 260;
             }
         }
-        sleeper = (sleeper + 1) % 15;
+        if window.has_focus() {
+            sleeper = (sleeper + 1) % 15;
+        } else {
+            sleeper = (sleeper + 1) % 1;
+        }
+
+//        sleep(Duration::from_nanos(1000000000));
     }
 }

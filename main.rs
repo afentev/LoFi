@@ -1,13 +1,18 @@
 extern crate sfml;
 extern crate vlc;
+extern crate curl;
+
+use curl::http;
 
 use sfml::graphics::*;
-use sfml::window::{Event, Key, Style, mouse};
+use sfml::window::{Event, Key, Style, mouse, Window};
 use sfml::system::{Vector2f, Vector3f, Vector2i};
 
 use vlc::{Instance, Media, MediaPlayer};
 use std::thread::sleep;
+
 use std::time::Duration;
+use std::borrow::Borrow;
 
 fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut ConvexShape,
           player: &mut Text, history: &mut Text, about_text: &mut Text, close_text: &mut Text,
@@ -19,7 +24,7 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
           date1: &mut Text, track2: &mut Text, date2: &mut Text, track3: &mut Text,
           date3: &mut Text, track4: &mut Text, date4: &mut Text, track5: &mut Text,
           date5: &mut Text, pause1: &mut ConvexShape, pause2: &mut ConvexShape, music_on: bool,
-          real_playing: bool) {
+          real_playing: bool, sleeper: i32, counter: i32, wait: i32, dir: &str) -> Vec<i32> {
     let xd = v.z - v.y;
     let iters = 30;
 
@@ -28,7 +33,38 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
     let mut cur_h = 100.0;
     let step = ((y_size / 2) / iters) as f32 * 1.3;
 
+    let mut sl = sleeper;
+    let mut cn = counter;
+    let mut wt = wait;
+
     for q in 0..iters {
+        let mut name: String = "/Gif/ss/".to_owned();
+        name = name + &cn.to_string() + ".png";
+        let image = Texture::from_file((dir.to_owned() + &name).as_str()).unwrap();
+
+        let mut sprite = Sprite::with_texture(&image);
+        sprite.set_texture_rect(&IntRect::new(0, 0, 800, 800));
+        sprite.set_color(Color::rgba(255, 255, 255, 255));
+        sprite.set_position(Vector2f::new(0.0, 0.0));
+
+        if sl == 0 {
+            if cn == 1 {
+                if wt == 0 {
+                    cn = 1 + (cn + 1) % 260;
+                    wt = 1;
+                } else {
+                    wt = (wt + 1) % 75;
+                }
+            } else {
+                cn = 1 + (cn + 1) % 260;
+            }
+        }
+        if window.has_focus() {
+            sl = (sl + 1) % 15;
+        } else {
+            sl = (sl + 1) % 1;
+        }
+
         if smooth {
             if q < iters / 2 {
                 let offset = xd * (q as f32 * 2.0) / iters as f32;
@@ -57,7 +93,7 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         }
 
         window.clear(Color::WHITE);
-        window.draw(sprite);
+        window.draw(&sprite);
         window.draw(display_rect);
         window.draw(player);
         window.draw(history);
@@ -171,6 +207,7 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
 
         window.display()
     }
+    vec!{sl, cn, wt}
 }
 
 fn gen_hist_rects(rect1: &mut ConvexShape, rect2: &mut ConvexShape, rect3: &mut ConvexShape,
@@ -270,6 +307,8 @@ fn is_clicked_on_right(x: i32, y: i32) -> bool {
 }
 
 fn main() {
+    let url = "http://opml.radiotime.com/Search.ashx?query=Lofi%20HipHop%20Radio%20/%20Chillsky";
+
     let instance = Instance::new().unwrap();
     let md = Media::new_location(&instance, "http://hyades.shoutca.st:8043/stream").unwrap();
 
@@ -354,7 +393,7 @@ fn main() {
     let mut about_page = Text::new("", &_fabryka, 30);
     about_page.set_outline_thickness(2.5);
     about_page.set_outline_color(Color::rgba(45, 45, 45, 200));
-    about_page.set_string("Репозиторий проекта: github.com/afentev/LoFi\n\nt.me/afentev");
+    about_page.set_string("Github: github.com/afentev/LoFi\n\nDev channel: t.me/lofiradiodesktop\n\nContact: t.me/afentev");
     about_page.set_position(Vector2f::new(1100.0, 160.0));
 
     let mut pause1 = ConvexShape::new(4);
@@ -375,21 +414,17 @@ fn main() {
 
     let mut window = RenderWindow::new(
         (width as u32, height as u32),
-        "Custom shape",
-        Style::NONE,
+        "LoFi Radio",
+        Style::TITLEBAR,
         &Default::default(),
     );
-//    window.set_framerate_limit(10);
+    window.set_icon(32, 32, Image::from_file((dir.to_owned() + "/icon.jpg").as_str()).unwrap().pixel_data());
 //    window.set_vertical_sync_enabled(true);
     window.set_key_repeat_enabled(false);
 
     let mut counter = 1;
     let mut sleeper = 0;
     let mut wait = 0;
-
-    let mut window_moving = false;
-    let mut window_prev = Vector2i::new(window.position().x, window.position().y);
-    let mut click_prev = Vector2i::new(0, 0);
 
 //    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
 //                                          vec!{"Undefined", "Undefined", "a long time ago"},
@@ -419,11 +454,13 @@ fn main() {
                    &mut date4, &mut track5, &mut date5);
 
     let mut is_music_playing = false;
-    let mut real_playing;
+    let mut real_playing= false;
+
+    let mut prev = window.has_focus();
 
     loop {
         if window.has_focus() {
-            window.set_framerate_limit(60);
+            window.set_framerate_limit(160);
         } else {
             window.set_framerate_limit(3);
         }
@@ -524,7 +561,7 @@ fn main() {
                 Event::MouseButtonPressed {
                     button, x, y
                 } => {
-                    if button == mouse::Button::Left && window.has_focus() {
+                    if button == mouse::Button::Left && window.has_focus() && prev{
                         if 729 <= x && x <= 787 && 6 <= y && y <= 32 {
                             return;
                         }
@@ -554,29 +591,35 @@ fn main() {
                             if prev == "p" {
                                 let mut v = Vector3f::new(300.0, 505.0, 760.0);
 
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, -35.0,
-                                       &mut v, 27.0, true, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                                        &mut history, &mut about_text, &mut close_text,
+                                                        &mut text_lofi, &mut text_radio, &mut play_rect,
+                                                        &mut play_text, &mut play_triangle, &mut nwplaying,
+                                                        &mut presstxt, &mut about_page, -35.0,
+                                                        &mut v, 27.0, true, &mut rect1, &mut rect2,
+                                                        &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                                        &mut track2, &mut date2, &mut track3,  &mut date3,
+                                                        &mut track4, &mut date4, &mut track5, &mut date5,
+                                                        &mut pause1, &mut pause2, is_music_playing,
+                                                        real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             } else if prev == "h" {
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, -70.0, &mut v,
-                                       0.0, false, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                               &mut history, &mut about_text, &mut close_text,
+                                               &mut text_lofi, &mut text_radio, &mut play_rect,
+                                               &mut play_text, &mut play_triangle, &mut nwplaying,
+                                               &mut presstxt, &mut about_page, -70.0, &mut v,
+                                               0.0, false, &mut rect1, &mut rect2,
+                                               &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                               &mut track2, &mut date2, &mut track3,  &mut date3,
+                                               &mut track4, &mut date4, &mut track5, &mut date5,
+                                               &mut pause1, &mut pause2, is_music_playing,
+                                               real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             }
                         }
                         if is_clicked_on_left(x, y) {
@@ -585,29 +628,35 @@ fn main() {
                             if prev == "p" {
                                 let mut v = Vector3f::new(505.0, 300.0, 15.0);
 
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, 35.0, &mut v,
-                                       11.0, true, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                               &mut history, &mut about_text, &mut close_text,
+                                               &mut text_lofi, &mut text_radio, &mut play_rect,
+                                               &mut play_text, &mut play_triangle, &mut nwplaying,
+                                               &mut presstxt, &mut about_page, 35.0, &mut v,
+                                               11.0, true, &mut rect1, &mut rect2,
+                                               &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                               &mut track2, &mut date2, &mut track3,  &mut date3,
+                                               &mut track4, &mut date4, &mut track5, &mut date5,
+                                               &mut pause1, &mut pause2, is_music_playing,
+                                               real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             } else if prev == "a" {
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, 70.0, &mut v,
-                                       0.0, false, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                               &mut history, &mut about_text, &mut close_text,
+                                               &mut text_lofi, &mut text_radio, &mut play_rect,
+                                               &mut play_text, &mut play_triangle, &mut nwplaying,
+                                               &mut presstxt, &mut about_page, 70.0, &mut v,
+                                               0.0, false, &mut rect1, &mut rect2,
+                                               &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                               &mut track2, &mut date2, &mut track3,  &mut date3,
+                                               &mut track4, &mut date4, &mut track5, &mut date5,
+                                               &mut pause1, &mut pause2, is_music_playing,
+                                               real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             }
                         }
                         if is_clicked_on_center(x, y) {
@@ -616,59 +665,41 @@ fn main() {
                             if prev == "h" {
                                 let mut v = Vector3f::new(15.0, 250.0, 505.0);
 
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, -35.0, &mut v,
-                                       47.0, true, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                               &mut history, &mut about_text, &mut close_text,
+                                               &mut text_lofi, &mut text_radio, &mut play_rect,
+                                               &mut play_text, &mut play_triangle, &mut nwplaying,
+                                               &mut presstxt, &mut about_page, -35.0, &mut v,
+                                               47.0, true, &mut rect1, &mut rect2,
+                                               &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                               &mut track2, &mut date2, &mut track3,  &mut date3,
+                                               &mut track4, &mut date4, &mut track5, &mut date5,
+                                               &mut pause1, &mut pause2, is_music_playing,
+                                               real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             } else if prev == "a" {
                                 let mut v = Vector3f::new(760.0, 505.0, 300.0);
 
-                                moving(&mut window, &mut sprite, &mut display_rect, &mut player,
-                                       &mut history, &mut about_text, &mut close_text,
-                                       &mut text_lofi, &mut text_radio, &mut play_rect,
-                                       &mut play_text, &mut play_triangle, &mut nwplaying,
-                                       &mut presstxt, &mut about_page, 35.0, &mut v,
-                                       -63.66, true, &mut rect1, &mut rect2,
-                                       &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
-                                       &mut track2, &mut date2, &mut track3,  &mut date3,
-                                       &mut track4, &mut date4, &mut track5, &mut date5,
-                                       &mut pause1, &mut pause2, is_music_playing,
-                                       real_playing);
-                            }
-                        }
-                        if cords.y < 30{
-                            if !window_moving {
-                                window_moving = true;
-                                window_prev.x = window.position().x;
-                                window_prev.y = window.position().y;
-                                click_prev.x = window.position().x + cords.x;
-                                click_prev.y = window.position().y + cords.y;
+                                let t = moving(&mut window, &mut sprite, &mut display_rect, &mut player,
+                                               &mut history, &mut about_text, &mut close_text,
+                                               &mut text_lofi, &mut text_radio, &mut play_rect,
+                                               &mut play_text, &mut play_triangle, &mut nwplaying,
+                                               &mut presstxt, &mut about_page, 35.0, &mut v,
+                                               -63.66, true, &mut rect1, &mut rect2,
+                                               &mut rect3, &mut rect4, &mut rect5, &mut track1,  &mut date1,
+                                               &mut track2, &mut date2, &mut track3,  &mut date3,
+                                               &mut track4, &mut date4, &mut track5, &mut date5,
+                                               &mut pause1, &mut pause2, is_music_playing,
+                                               real_playing, sleeper, counter, wait, dir);
+                                sleeper = t[0];
+                                counter = t[1];
+                                wait = t[2];
                             }
                         }
                     }
 
-                }
-                Event::MouseButtonReleased {
-                    ..
-                } => {
-                    if window_moving {
-                        window_moving = false;
-                    }
-                }
-                Event::MouseMoved {
-                    ..
-                } => {
-                    if window_moving {
-                        let delta = Vector2i::new(ps.x - click_prev.x, ps.y - click_prev.y);
-                        window.set_position(Vector2i::new(window_prev.x + delta.x, window_prev.y + delta.y));
-                    }
                 },
                 _ => {}
             }
@@ -710,7 +741,7 @@ fn main() {
             window.draw(&date5);
         }
 
-        if window.has_focus() {
+        if window.has_focus() && prev {
             if 0 <= cords.x && cords.x <= 800 && 0 <= cords.y && cords.y <= 800 {
                 if (800 - cords.x) * (800 - cords.x) + cords.y * cords.y <= 125000 {
                     let mut delta = ((800 - cords.x) * (800 - cords.x) + (cords.y) * (cords.y)) as f64;
@@ -718,6 +749,7 @@ fn main() {
                     close_text.set_fill_color(Color::rgba(255, 255, 255, delta as u8));
                 } else {
                     close_text.set_fill_color(Color::rgba(255, 255, 255, 0));
+                    close_text.set_outline_thickness(0.0);
                 }
                 if 729 <= cords.x && cords.x <= 787 && 6 <= cords.y && cords.y <= 32 {
                     close_text.set_outline_thickness(0.9);
@@ -744,6 +776,7 @@ fn main() {
 
             } else {
                 close_text.set_fill_color(Color::rgba(255, 255, 255, 0));
+                close_text.set_outline_thickness(0.0);
             }
         }
 
@@ -755,6 +788,20 @@ fn main() {
         window.display();
 
         if sleeper == 0 {
+            if sleeper % 7 == 0 {
+                if real_playing {
+                    let resp = http::handle().get(url).exec().unwrap();
+                    let body = std::str::from_utf8(resp.get_body()).unwrap();
+                    let lhs = body.find("subtext=").unwrap() + 9;
+                    let rhs = body[lhs..].find('"').unwrap();
+                    let title =  &body[lhs..lhs + rhs];
+                    presstxt.set_string(title);
+                    presstxt.set_position(Vector2f::new(245.0 - 2.0 * title.len() as f32, 475.0));
+                } else {
+                    presstxt.set_string("Press play to start");
+                    presstxt.set_position(Vector2f::new(245.0, 475.0));
+                }
+            }
             if counter == 1 {
                 if wait == 0 {
                     counter = 1 + (counter + 1) % 260;
@@ -766,11 +813,14 @@ fn main() {
                 counter = 1 + (counter + 1) % 260;
             }
         }
+        
         if window.has_focus() {
             sleeper = (sleeper + 1) % 15;
         } else {
             sleeper = (sleeper + 1) % 1;
         }
+
+        prev = window.has_focus();
 
 //        sleep(Duration::from_nanos(1000000000));
     }

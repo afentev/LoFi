@@ -425,6 +425,7 @@ fn main() {
     let mut counter = 1;
     let mut sleeper = 0;
     let mut wait = 0;
+    let mut missing = 0;
 
 //    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
 //                                          vec!{"Undefined", "Undefined", "a long time ago"},
@@ -788,7 +789,8 @@ fn main() {
         window.display();
 
         if sleeper == 0 {
-            if sleeper % 7 == 0 {
+            missing = (1 + missing) % 15;
+            if missing == 1 {
                 if real_playing {
                     let resp = http::handle().get(url).exec().unwrap();
                     let body = std::str::from_utf8(resp.get_body()).unwrap();
@@ -796,10 +798,14 @@ fn main() {
                     let rhs = body[lhs..].find('"').unwrap();
                     let title =  &body[lhs..lhs + rhs];
                     presstxt.set_string(title);
-                    presstxt.set_position(Vector2f::new(245.0 - 2.0 * title.len() as f32, 475.0));
+                    if whirligig == "p" {
+                        presstxt.set_position(Vector2f::new(245.0 - 2.0 * title.len() as f32, 475.0));
+                    }
                 } else {
                     presstxt.set_string("Press play to start");
-                    presstxt.set_position(Vector2f::new(245.0, 475.0));
+                    if whirligig == "p" {
+                        presstxt.set_position(Vector2f::new(245.0, 475.0));
+                    }
                 }
             }
             if counter == 1 {

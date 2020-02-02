@@ -1,6 +1,6 @@
 [package]
 name = "lofi_rust"
-version = "0.1.0"
+version = "0.0.6"
 authors = ["afentev"]
 edition = "2018"
 
@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 sfml = "*"
 vlc-rs = "*"
+curl = "0.2.11"

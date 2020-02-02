@@ -5,16 +5,31 @@ extern crate curl;
 use curl::http;
 
 use sfml::graphics::*;
-use sfml::window::{Event, Key, Style, mouse, Window};
-use sfml::system::{Vector2f, Vector3f, Vector2i};
+use sfml::window::{Event, Key, Style, mouse};
+use sfml::system::{Vector2f, Vector3f};
 
 use vlc::{Instance, Media, MediaPlayer};
-use std::thread::sleep;
 
-use std::time::Duration;
-use std::borrow::Borrow;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut ConvexShape,
+fn how_long(time1: u64) -> &'static str {
+    let start = SystemTime::now();
+    let since_the_epoch = start.duration_since(UNIX_EPOCH).unwrap();
+
+    let delta = since_the_epoch.as_secs() - time1;
+
+    if delta < 60 {
+        return "few second ago"
+    } else if delta < 1800 {
+        return "few minutes ago"
+    } else if delta < 3600 {
+        return "half an hour ago"
+    } else {
+        return "a long time ago"
+    }
+}
+
+fn moving(window: &mut RenderWindow, _sprite: &mut Sprite, display_rect: &mut ConvexShape,
           player: &mut Text, history: &mut Text, about_text: &mut Text, close_text: &mut Text,
           text_lofi: &mut Text, text_radio: &mut Text, play_rect: &mut ConvexShape,
           play_text: &mut Text, play_triangle: &mut ConvexShape, nwplaying: &mut Text,
@@ -42,10 +57,10 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         name = name + &cn.to_string() + ".png";
         let image = Texture::from_file((dir.to_owned() + &name).as_str()).unwrap();
 
-        let mut sprite = Sprite::with_texture(&image);
-        sprite.set_texture_rect(&IntRect::new(0, 0, 800, 800));
-        sprite.set_color(Color::rgba(255, 255, 255, 255));
-        sprite.set_position(Vector2f::new(0.0, 0.0));
+        let mut _sprite = Sprite::with_texture(&image);
+        _sprite.set_texture_rect(&IntRect::new(0, 0, 800, 800));
+        _sprite.set_color(Color::rgba(255, 255, 255, 255));
+        _sprite.set_position(Vector2f::new(0.0, 0.0));
 
         if sl == 0 {
             if cn == 1 {
@@ -93,7 +108,7 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
         }
 
         window.clear(Color::WHITE);
-        window.draw(&sprite);
+        window.draw(&_sprite);
         window.draw(display_rect);
         window.draw(player);
         window.draw(history);
@@ -210,87 +225,19 @@ fn moving(window: &mut RenderWindow, sprite: &mut Sprite, display_rect: &mut Con
     vec!{sl, cn, wt}
 }
 
-fn gen_hist_rects(rect1: &mut ConvexShape, rect2: &mut ConvexShape, rect3: &mut ConvexShape,
-                  rect4: &mut ConvexShape, rect5: &mut ConvexShape, track1: &mut Text,
-                  date1: &mut Text, track2: &mut Text, date2: &mut Text, track3: &mut Text,
-                  date3: &mut Text, track4: &mut Text, date4: &mut Text, track5: &mut Text,
-                  date5: &mut Text) {
+fn gen_hist_rects(date1: &mut Text, date2: &mut Text, date3: &mut Text, date4: &mut Text,
+                  date5: &mut Text, hist_time: &[u64], is_on: bool) {
 
-    rect1.set_point(0, Vector2f::new(-970.0, 170.0));
-    rect1.set_point(1, Vector2f::new(-970.0, 260.0));
-    rect1.set_point(2, Vector2f::new(-330.0, 260.0));
-    rect1.set_point(3, Vector2f::new(-330.0, 170.0));
+    if is_on {
+        date1.set_string("right now");
+    } else {
+        date1.set_string(how_long(hist_time[4]));
+    }
 
-    rect2.set_point(0, Vector2f::new(-970.0, 290.0));
-    rect2.set_point(1, Vector2f::new(-970.0, 380.0));
-    rect2.set_point(2, Vector2f::new(-330.0, 380.0));
-    rect2.set_point(3, Vector2f::new(-330.0, 290.0));
-
-    rect3.set_point(0, Vector2f::new(-970.0, 410.0));
-    rect3.set_point(1, Vector2f::new(-970.0, 500.0));
-    rect3.set_point(2, Vector2f::new(-330.0, 500.0));
-    rect3.set_point(3, Vector2f::new(-330.0, 410.0));
-
-    rect4.set_point(0, Vector2f::new(-970.0, 530.0));
-    rect4.set_point(1, Vector2f::new(-970.0, 620.0));
-    rect4.set_point(2, Vector2f::new(-330.0, 620.0));
-    rect4.set_point(3, Vector2f::new(-330.0, 530.0));
-
-    rect5.set_point(0, Vector2f::new(-970.0, 650.0));
-    rect5.set_point(1, Vector2f::new(-970.0, 740.0));
-    rect5.set_point(2, Vector2f::new(-330.0, 740.0));
-    rect5.set_point(3, Vector2f::new(-330.0, 650.0));
-
-    rect1.set_fill_color(Color::rgba(10, 10, 10, 100));
-    rect1.set_outline_thickness(6.0);
-    rect1.set_outline_color(Color::rgba(10, 10, 10, 165));
-
-    rect2.set_fill_color(Color::rgba(10, 10, 10, 100));
-    rect2.set_outline_thickness(6.0);
-    rect2.set_outline_color(Color::rgba(10, 10, 10, 165));
-
-    rect3.set_fill_color(Color::rgba(10, 10, 10, 100));
-    rect3.set_outline_thickness(6.0);
-    rect3.set_outline_color(Color::rgba(10, 10, 10, 165));
-
-    rect4.set_fill_color(Color::rgba(10, 10, 10, 100));
-    rect4.set_outline_thickness(6.0);
-    rect4.set_outline_color(Color::rgba(10, 10, 10, 165));
-
-    rect5.set_fill_color(Color::rgba(10, 10, 10, 100));
-    rect5.set_outline_thickness(6.0);
-    rect5.set_outline_color(Color::rgba(10, 10, 10, 165));
-
-    track1.set_string("The Beatles - Let it be");
-    date1.set_string("a long time ago");
-    date1.set_fill_color(Color::rgba(250, 250, 250, 255));
-
-    track2.set_string("Del Shannon - Runaway");
-    date2.set_string("a long time ago");
-    date2.set_fill_color(Color::rgba(250, 250, 250, 255));
-
-    track3.set_string("Del Shannon - Runaway");
-    date3.set_string("a long time ago");
-    date3.set_fill_color(Color::rgba(250, 250, 250, 255));
-
-    track4.set_string("Del Shannon - Runaway");
-    date4.set_string("a long time ago");
-    date4.set_fill_color(Color::rgba(250, 250, 250, 255));
-
-    track5.set_string("Del Shannon - Runaway");
-    date5.set_string("a long time ago");
-    date5.set_fill_color(Color::rgba(250, 250, 250, 255));
-
-    track1.set_position(Vector2f::new(-960.0, 180.0));
-    date1.set_position(Vector2f::new(-958.0, 230.0));
-    track2.set_position(Vector2f::new(-960.0, 300.0));
-    date2.set_position(Vector2f::new(-958.0, 350.0));
-    track3.set_position(Vector2f::new(-960.0, 420.0));
-    date3.set_position(Vector2f::new(-958.0, 470.0));
-    track4.set_position(Vector2f::new(-960.0, 540.0));
-    date4.set_position(Vector2f::new(-958.0, 590.0));
-    track5.set_position(Vector2f::new(-960.0, 660.0));
-    date5.set_position(Vector2f::new(-958.0, 710.0));
+    date2.set_string(how_long(hist_time[3]));
+    date3.set_string(how_long(hist_time[2]));
+    date4.set_string(how_long(hist_time[1]));
+    date5.set_string(how_long(hist_time[0]));
 
 }
 
@@ -427,12 +374,6 @@ fn main() {
     let mut wait = 0;
     let mut missing = 0;
 
-//    let history_data = vec!{vec!{"Undefined", "Undefined", "a long time ago"},
-//                                          vec!{"Undefined", "Undefined", "a long time ago"},
-//                                          vec!{"Undefined", "Undefined", "a long time ago"},
-//                                          vec!{"Undefined", "Undefined", "a long time ago"},
-//                                          vec!{"Undefined", "Undefined", "a long time ago"}};
-
     let mut rect1 = ConvexShape::new(4);
     let mut rect2 = ConvexShape::new(4);
     let mut rect3 = ConvexShape::new(4);
@@ -450,12 +391,88 @@ fn main() {
     let mut track5 = Text::new("", &jb, 23);
     let mut date5 = Text::new("", &jb, 15);
 
-    gen_hist_rects(&mut rect1, &mut rect2, &mut rect3, &mut rect4, &mut rect5, &mut track1,
-                   &mut date1, &mut track2, &mut date2, &mut track3,  &mut date3, &mut track4,
-                   &mut date4, &mut track5, &mut date5);
+    rect1.set_point(0, Vector2f::new(-970.0, 170.0));
+    rect1.set_point(1, Vector2f::new(-970.0, 260.0));
+    rect1.set_point(2, Vector2f::new(-330.0, 260.0));
+    rect1.set_point(3, Vector2f::new(-330.0, 170.0));
+
+    rect2.set_point(0, Vector2f::new(-970.0, 290.0));
+    rect2.set_point(1, Vector2f::new(-970.0, 380.0));
+    rect2.set_point(2, Vector2f::new(-330.0, 380.0));
+    rect2.set_point(3, Vector2f::new(-330.0, 290.0));
+
+    rect3.set_point(0, Vector2f::new(-970.0, 410.0));
+    rect3.set_point(1, Vector2f::new(-970.0, 500.0));
+    rect3.set_point(2, Vector2f::new(-330.0, 500.0));
+    rect3.set_point(3, Vector2f::new(-330.0, 410.0));
+
+    rect4.set_point(0, Vector2f::new(-970.0, 530.0));
+    rect4.set_point(1, Vector2f::new(-970.0, 620.0));
+    rect4.set_point(2, Vector2f::new(-330.0, 620.0));
+    rect4.set_point(3, Vector2f::new(-330.0, 530.0));
+
+    rect5.set_point(0, Vector2f::new(-970.0, 650.0));
+    rect5.set_point(1, Vector2f::new(-970.0, 740.0));
+    rect5.set_point(2, Vector2f::new(-330.0, 740.0));
+    rect5.set_point(3, Vector2f::new(-330.0, 650.0));
+
+    rect1.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect1.set_outline_thickness(6.0);
+    rect1.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect2.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect2.set_outline_thickness(6.0);
+    rect2.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect3.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect3.set_outline_thickness(6.0);
+    rect3.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect4.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect4.set_outline_thickness(6.0);
+    rect4.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    rect5.set_fill_color(Color::rgba(10, 10, 10, 100));
+    rect5.set_outline_thickness(6.0);
+    rect5.set_outline_color(Color::rgba(10, 10, 10, 165));
+
+    date1.set_fill_color(Color::rgba(250, 250, 250, 255));
+    date2.set_fill_color(Color::rgba(250, 250, 250, 255));
+    date3.set_fill_color(Color::rgba(250, 250, 250, 255));
+    date4.set_fill_color(Color::rgba(250, 250, 250, 255));
+    date5.set_fill_color(Color::rgba(250, 250, 250, 255));
+
+    track1.set_string("No data");
+    track2.set_string("No data");
+    track3.set_string("No data");
+    track4.set_string("No data");
+    track5.set_string("No data");
+
+    date1.set_string("a long time ago");
+    date2.set_string("a long time ago");
+    date3.set_string("a long time ago");
+    date4.set_string("a long time ago");
+    date5.set_string("a long time ago");
+
+    track1.set_position(Vector2f::new(-960.0, 180.0));
+    date1.set_position(Vector2f::new(-958.0, 230.0));
+    track2.set_position(Vector2f::new(-960.0, 300.0));
+    date2.set_position(Vector2f::new(-958.0, 350.0));
+    track3.set_position(Vector2f::new(-960.0, 420.0));
+    date3.set_position(Vector2f::new(-958.0, 470.0));
+    track4.set_position(Vector2f::new(-960.0, 540.0));
+    date4.set_position(Vector2f::new(-958.0, 590.0));
+    track5.set_position(Vector2f::new(-960.0, 660.0));
+    date5.set_position(Vector2f::new(-958.0, 710.0));
+
+
+    let mut hist_time: Vec<u64> = vec!{0u64, 0u64, 0u64, 0u64, 0u64};
+
+    gen_hist_rects( &mut date1, &mut date2,  &mut date3, &mut date4, &mut date5,
+                    hist_time.as_slice(), false);
 
     let mut is_music_playing = false;
-    let mut real_playing= false;
+    let mut real_playing;
 
     let mut prev = window.has_focus();
 
@@ -535,7 +552,6 @@ fn main() {
         }
 
         let cords = window.mouse_position();
-        let ps = mouse::desktop_position();
 
         if is_music_playing && real_playing || !is_music_playing && !real_playing && window.has_focus() {
             if 310 <= cords.x && cords.x <= 490 && 600 <= cords.y && cords.y <= 640 {
@@ -793,13 +809,37 @@ fn main() {
             if missing == 1 {
                 if real_playing {
                     let resp = http::handle().get(url).exec().unwrap();
+                    //`Unknown - ｃｈｅｒｒｙ ｘ Ａｐｏ`
                     let body = std::str::from_utf8(resp.get_body()).unwrap();
+                    let body = body.replace(|c: char| !c.is_ascii(), "?");
+
                     let lhs = body.find("subtext=").unwrap() + 9;
                     let rhs = body[lhs..].find('"').unwrap();
-                    let title =  &body[lhs..lhs + rhs];
+                    let title = &body[lhs..lhs + rhs];
+
                     presstxt.set_string(title);
+                    let mut t = presstxt.string().to_rust_string();
+                    if t.len() > 40 {
+                        t = t[..40].to_owned() + "...";
+                    }
+                    presstxt.set_string(t.as_str());
+
                     if whirligig == "p" {
-                        presstxt.set_position(Vector2f::new(245.0 - 2.0 * title.len() as f32, 475.0));
+                        let delta = t.len() as f32 - 19.0;
+                        presstxt.set_position(Vector2f::new(245.0 - 7.8 * delta, 475.0));
+                    }
+                    if t != track1.string().to_rust_string() {
+                        track5.set_string(track4.string());
+                        track4.set_string(track3.string());
+                        track3.set_string(track2.string());
+                        track2.set_string(track1.string());
+                        track1.set_string(t.as_str());
+
+                        let start = SystemTime::now();
+                        let since_the_epoch = start.duration_since(UNIX_EPOCH).unwrap();
+
+                        hist_time.push(since_the_epoch.as_secs());
+                        hist_time.remove(0);
                     }
                 } else {
                     presstxt.set_string("Press play to start");
@@ -807,6 +847,8 @@ fn main() {
                         presstxt.set_position(Vector2f::new(245.0, 475.0));
                     }
                 }
+                gen_hist_rects( &mut date1, &mut date2,  &mut date3, &mut date4, &mut date5,
+                                hist_time.as_slice(), real_playing);
             }
             if counter == 1 {
                 if wait == 0 {
